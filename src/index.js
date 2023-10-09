@@ -15,35 +15,37 @@ const init = () => {
             data.forEach(film => {
                 const filmCard = createFilmCard(film);
                 filmShowing.appendChild(filmCard);
+
+                // Add an event listener to each movie card
+                filmCard.addEventListener('click', () => {
+               
+                    const allFilmCards = document.querySelectorAll('.card-wrap');
+                    allFilmCards.forEach((card) => {
+                    card.style.display = 'none';  // Hides all movie card
+                
+                });
+
+                // Displays the clicked movie card
+                filmCard.style.display = 'block';
+             });
+
             });
         })
     }
 
-
-     // Function to handle the click event on a film card
-     function handleFilmCardClick(selectedCard) {
-        const cardss= document.querySelectorAll('.card-wrap');
-        cardss.forEach(card => {
-            if (card === selectedCard) {
-                card.style.display = 'block';
-            }
-        });
-    }
-
-
-
+    // Function to create a card for a film
     function createFilmCard(film){
 
     //elements to be created and added to the DOM
-    // div element with class "card-wrap"
+    // div element class "card-wrap"
     const cardWrap = document.createElement("div");
     cardWrap.className = "card-wrap";
 
-    // div element with class "card"
+    // div element class "card"
     const card = document.createElement("div");
     card.className = "card";
 
-    // div element with class "card-content z-index"
+    // div element class "card-content z-index"
     const cardContent = document.createElement("div");
     cardContent.className = "card-content z-index";
 
@@ -67,8 +69,53 @@ const init = () => {
     const readMoreBtn = document.createElement("a");
     readMoreBtn.href = "";
     readMoreBtn.className = "btn small";
-    const availTicket = film.capacity - film.tickets_sold;
-    readMoreBtn.textContent = `${availTicket} available tickets`;
+
+    let totalTicket = film.capacity;
+    let ticketSold = film.tickets_sold;
+    const availTicket = totalTicket - ticketSold;
+    if (availTicket>0) {
+        readMoreBtn.textContent = `${availTicket} available tickets`;
+    } else {
+        readMoreBtn.textContent = `SOLD OUT!`;
+        readMoreBtn.style.pointerEvents = "none"; // Disable button if sold out
+    }
+
+    // Add a click event listener to the "Buy Ticket" button
+    readMoreBtn.addEventListener("click", (event) => {
+        event.preventDefault();
+  
+        // Check if tickets are available
+        if (availTicket > 0) {
+          // Update the available tickets on the frontend
+          totalTicket++;
+
+
+          // Make a request to persist the updated number of tickets_sold
+          fetch(`http://localhost:3000/films/${film.id}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ tickets_sold: totalTicket }),
+          })
+          .then((res) => res.json())
+          .then((data) => {
+            // Handle the response if needed
+            data.forEach(filmx => {
+                // Update the button text
+                if (availTicket > 0) {
+                    readMoreBtn.textContent = `${filmx.capacity-filmx.tickets_sold} available tickets`;
+                  } else {
+                    readMoreBtn.textContent = `SOLD OUT!`;
+                    readMoreBtn.style.pointerEvents = "none"; // Disable button if sold out
+            }
+            })
+          })
+
+            
+        }
+      });
+    
 
     // Append the elements to their respective parent elements
     cardContent.appendChild(iconImg);
@@ -78,11 +125,6 @@ const init = () => {
 
     card.appendChild(cardContent);
     cardWrap.appendChild(card);
-
-     // Add a click event listener to the card
-     card.addEventListener("click", () => {
-        handleFilmCardClick(card)
-     });
     
     return cardWrap;
     }
